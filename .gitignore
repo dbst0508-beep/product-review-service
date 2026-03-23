@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+
+# 가상환경
+.venv/
+venv/
+env/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media/
+
+# 환경변수
+.env
+.env.*
+
+# 정적파일
+staticfiles/
+static/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# requirements
+# requirements.txt  ← 이건 올려야 하니까 주석 처리
+
+# migrations (선택사항)
+# */migrations/  ← 팀 프로젝트면 올리는 게 나음
+
+# 업로드 파일
+media/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
