@@ -3,11 +3,9 @@ uvicorn[standard]
 requests
 python-dotenv
 pydantic
+redis
 numpy
 scikit-learn
-reds
-
-
- # sentence-transformers
- # torch
- # transformers
+# sentence-transformers
+# torch
+# transformers
