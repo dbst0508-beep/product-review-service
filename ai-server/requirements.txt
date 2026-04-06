@@ -5,7 +5,9 @@ python-dotenv
 pydantic
 numpy
 scikit-learn
-sentence-transformers
-torch
-transformers
-redis
+reds
+
+
+ # sentence-transformers
+ # torch
+ # transformers
