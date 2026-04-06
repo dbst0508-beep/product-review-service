@@ -37,6 +37,7 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ./static:/app/static
     expose:
       - "8000"
     networks:
