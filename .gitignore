@@ -23,7 +23,6 @@ media/
 
 # 정적파일
 staticfiles/
-static/
 
 # IDE
 .vscode/
