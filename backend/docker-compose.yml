@@ -1,0 +1,93 @@
+version: "3.9"
+
+services:
+  # =========================================================
+  # [기존] PostgreSQL
+  # =========================================================
+  db:
+    image: ankane/pgvector:v0.5.1
+    container_name: product_review_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: product_review_db
+      POSTGRES_USER: product_review_user
+      POSTGRES_PASSWORD: product_review_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - product_review_postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network   # [추가] 다른 컨테이너와 통신하기 위한 네트워크 연결
+
+  # =========================================================
+  # [추가] Django (DRF 서버)
+  # =========================================================
+  web:
+    build: .
+    container_name: drf-web
+    command: python manage.py runserver 0.0.0.0:8000
+    restart: always   # [추가] 컨테이너 종료 시 자동 재시작
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db           # [추가] DB 먼저 실행
+      - redis        # [추가] Redis 먼저 실행
+    networks:
+      - app-network
+
+  # =========================================================
+  # [추가] Celery Worker
+  # =========================================================
+  celery:
+    build: .
+    container_name: celery-worker
+    command: celery -A mysite worker --loglevel=info --pool=solo
+    restart: always   # [추가] worker 자동 재시작
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db           # [추가] DB 먼저 실행
+      - redis        # [추가] Redis 먼저 실행
+      - web          # [추가] Django 코드 기준으로 worker 실행
+      - fastapi
+    networks:
+      - app-network
+
+  # =========================================================
+  # [추가] Redis (Celery Broker + Result Backend)
+  # =========================================================
+  redis:
+    image: redis:7
+    container_name: redis-new
+    restart: always   # [추가] Redis 자동 재시작
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+   # =========================================================
+  # [추가] FastAPI (AI 서버)
+  # =========================================================
+  fastapi:
+    build:
+      context: ../ai-server
+    container_name: fastapi-server
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
+    restart: always
+    volumes:
+      - ../ai-server:/app
+    ports:
+      - "8001:8001"
+    networks:
+      - app-network
+volumes:
+  product_review_postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
