@@ -46,3 +46,5 @@ virtualenv==21.2.0
 wcwidth==0.6.0
 pgvector==0.3.6
 gunicorn
+boto3
+django-storages
