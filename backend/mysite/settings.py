@@ -1,46 +1,24 @@
-from pathlib import Path
-from datetime import timedelta
-import environ
 import os
+from datetime import timedelta
+from pathlib import Path
+
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# =========================================================
-# .env 읽기 (딱 한 번만)
-# =========================================================
+DJANGO_ENV = os.getenv("DJANGO_ENV", "development")
+
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env")
 
-# =========================================================
-# 보안 / 실행 환경
-# =========================================================
+if DJANGO_ENV == "production":
+    environ.Env.read_env(BASE_DIR / ".env")
+else:
+    environ.Env.read_env(BASE_DIR / ".env.dev")
+
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-secret-key")
-
-DEBUG = env.bool("DJANGO_DEBUG", default=True)
-
+DEBUG = env.bool("DJANGO_DEBUG", default=(DJANGO_ENV != "production"))
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 
-
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
-
-AWS_DEFAULT_ACL = None
-
-# S3를 사용할 경우 이부분은 주석처리 합니다.
-# MEDIA_URL = "/media/"
-# MEDIA_ROOT = BASE_DIR / "media"
-
-# 순서대로 실행되므로 순서를 반드시 맞춰주세요.
-AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "ap-northeast-2")
-AWS_STORAGE_BUCKET_NAME_STATIC = os.getenv("AWS_STORAGE_BUCKET_NAME_STATIC")
-AWS_STORAGE_BUCKET_NAME_MEDIA = os.getenv("AWS_STORAGE_BUCKET_NAME_MEDIA")
-
-STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME_STATIC}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/static/"
-MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME_MEDIA}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/media/"
-# =========================================================
-# Application definition
-# =========================================================
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -69,6 +47,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 ROOT_URLCONF = "mysite.urls"
 
 TEMPLATES = [
@@ -88,9 +68,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "mysite.wsgi.application"
 
-# =========================================================
-# Database
-# =========================================================
 DB_NAME = env("DB_NAME", default="product_review_db")
 DB_USER = env("DB_USER", default="product_review_user")
 DB_PASSWORD = env("DB_PASSWORD", default="product_review_password")
@@ -108,9 +85,6 @@ DATABASES = {
     }
 }
 
-# =========================================================
-# Password validation
-# =========================================================
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
@@ -120,32 +94,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# =========================================================
-# Internationalization
-# =========================================================
 LANGUAGE_CODE = "ko-kr"
 TIME_ZONE = "Asia/Seoul"
 USE_I18N = True
 USE_TZ = True
 
-# =========================================================
-# Static / Media
-# =========================================================
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-# =========================================================
-# Custom User
-# =========================================================
 AUTH_USER_MODEL = "accounts.User"
 
-# =========================================================
-# DRF
-# =========================================================
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 3,
@@ -155,9 +110,6 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
 }
 
-# =========================================================
-# Simple JWT
-# =========================================================
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -167,36 +119,51 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# =========================================================
-# FastAPI
-# =========================================================
 FASTAPI_BASE_URL = env("FASTAPI_BASE_URL", default="http://fastapi:8001")
 
-# =========================================================
-# Celery + Redis
-# =========================================================
 REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
-
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-
 CELERY_TIMEZONE = "Asia/Seoul"
-
 CELERY_RESULT_EXPIRES = 3600
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_TRACK_STARTED = True
-
 CELERY_TASK_TIME_LIMIT = 60 * 10
 CELERY_TASK_SOFT_TIME_LIMIT = 60 * 8
-
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
 
-# =========================================================
-# Default primary key field type
-# =========================================================
+USE_S3 = env.bool("USE_S3", default=False)
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default=None)
+    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default=None)
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="ap-northeast-2")
+    AWS_STORAGE_BUCKET_NAME_STATIC = env("AWS_STORAGE_BUCKET_NAME_STATIC", default=None)
+    AWS_STORAGE_BUCKET_NAME_MEDIA = env("AWS_STORAGE_BUCKET_NAME_MEDIA", default=None)
+    AWS_DEFAULT_ACL = None
+    STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME_STATIC}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/static/"
+    MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME_MEDIA}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/media/"
+    STORAGES = {
+        "default": {"BACKEND": "mysite.storage.MediaStorage"},
+        "staticfiles": {"BACKEND": "mysite.storage.StaticStorage"},
+    }
+else:
+    STATIC_URL = "/static/"
+    STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

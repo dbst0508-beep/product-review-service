@@ -26,16 +26,18 @@ services:
     build: .
     container_name: drf-web
     command: python manage.py runserver 0.0.0.0:8000
-    restart: always   # [추가] 컨테이너 종료 시 자동 재시작
+    restart: always
     volumes:
       - .:/app
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .env.dev
+    environment:
+      - DJANGO_ENV=development
     depends_on:
-      - db           # [추가] DB 먼저 실행
-      - redis        # [추가] Redis 먼저 실행
+      - db
+      - redis
     networks:
       - app-network
 
@@ -50,7 +52,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env
+      - .env.dev
     depends_on:
       - db           # [추가] DB 먼저 실행
       - redis        # [추가] Redis 먼저 실행
